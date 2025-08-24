@@ -1,0 +1,25 @@
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import nodemailer from "nodemailer";
+
+export default async function handler(req:VercelRequest,res:VercelResponse){
+  if(req.method!=="POST") return res.status(405).json({error:"Méthode non autorisée"});
+  
+  const { email, report } = req.body; // email du client + rapport JSON
+  if(!email || !report) return res.status(400).json({error:"Email et rapport obligatoires"});
+
+  // Exemple: Gmail (mieux vaut SendGrid en prod)
+  const transporter = nodemailer.createTransport({
+    service:"gmail",
+    auth:{ user:process.env.MAIL_USER, pass:process.env.MAIL_PASS }
+  });
+
+  await transporter.sendMail({
+    from:"hello@labonnecasquette.com",
+    to:email,
+    subject:"Rapport d’audit de ton site",
+    text:`Voici ton rapport :\n${JSON.stringify(report,null,2)}`,
+    html:`<h3>Rapport d’audit</h3><pre>${JSON.stringify(report,null,2)}</pre>`
+  });
+
+  res.status(200).json({ok:true,message:"Mail envoyé"});
+}
